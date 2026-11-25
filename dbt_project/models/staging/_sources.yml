@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: olist
+    description: "Raw Brazilian e-commerce transactional tables ingested from the Kaggle Olist dataset."
+    schema: raw
+    tables:
+      - name: olist_customers
+        description: "Customer records linking order-level customer_id to unique customer_unique_id and zip code."
+      - name: olist_geolocation
+        description: "Brazilian zip code prefixes mapped to latitude, longitude, city, and state (contains multiple rows per zip prefix)."
+      - name: olist_order_items
+        description: "Line items purchased within each order, including product_id, seller_id, price, and freight value."
+      - name: olist_order_payments
+        description: "Order payment transactions by sequential installment, payment type, and payment value."
+      - name: olist_order_reviews
+        description: "Customer reviews and satisfaction scores (1-5) submitted per order."
+      - name: olist_orders
+        description: "Core order lifecycle table with status and purchase, approval, carrier, delivery, and estimated timestamps."
+      - name: olist_products
+        description: "Product catalog attributes including category name, dimensions, weight, and photo count."
+      - name: olist_sellers
+        description: "Seller directory with zip code prefix, city, and state."
+      - name: product_category_name_translation
+        description: "Lookup table translating Portuguese product category names to English."
+
+  - name: bcb
+    description: "Macroeconomic time series ingested from the Banco Central do Brasil (BCB SGS API)."
+    schema: raw
+    tables:
+      - name: bcb_ipca
+        description: "Monthly Brazilian consumer price index (IPCA) percentage variation (BCB SGS series 433)."
+      - name: bcb_fx_usd_brl
+        description: "Daily USD/BRL PTAX selling exchange rate published on Brazilian business days (BCB SGS series 1)."

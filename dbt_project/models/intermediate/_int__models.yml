@@ -1,0 +1,184 @@
+version: 2
+
+models:
+  - name: int_bcb_ipca_index
+    description: "Compounded IPCA price index rebased to 100 in 2018-08-01 with constant-BRL deflator."
+    columns:
+      - name: reference_month
+        description: "First day of the reference month (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: ipca_monthly_pct
+        description: "Monthly IPCA percentage change."
+        data_tests:
+          - not_null
+      - name: ipca_index_base_2018_08
+        description: "Compounded IPCA index rebased to 100.0 on 2018-08-01."
+        data_tests:
+          - not_null
+      - name: deflator_to_2018_08
+        description: "Multiplier converting nominal BRL to constant August 2018 BRL (100 / ipca_index_base_2018_08)."
+        data_tests:
+          - not_null
+
+  - name: int_bcb_fx_daily
+    description: "Continuous daily USD/BRL exchange rate spine from 2016-08-01 to 2018-12-31 with LOCF forward-fill."
+    columns:
+      - name: fx_date
+        description: "Calendar date (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: usd_brl_rate
+        description: "Daily USD/BRL exchange rate (forward-filled on weekends/holidays)."
+        data_tests:
+          - not_null
+      - name: is_bcb_business_day
+        description: "True when BCB published an official quote on that date; false when forward-filled."
+        data_tests:
+          - not_null
+
+  - name: int_geolocation_deduped
+    description: "Deduplicated geolocation lookup at 1 row per zip_code_prefix with average coordinates and canonical city/state."
+    columns:
+      - name: zip_code_prefix
+        description: "5-digit Brazilian postal code prefix (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: geolocation_lat
+        description: "Mean latitude for the zip code prefix."
+        data_tests:
+          - not_null
+      - name: geolocation_lng
+        description: "Mean longitude for the zip code prefix."
+        data_tests:
+          - not_null
+      - name: city
+        description: "Most frequent lowercased city name for the zip code prefix."
+        data_tests:
+          - not_null
+      - name: state
+        description: "Most frequent uppercased 2-letter state code for the zip code prefix."
+        data_tests:
+          - not_null
+
+  - name: int_products_enriched
+    description: "Product catalog enriched with English category translations, manual fallbacks for 2 missing Portuguese categories, and 'unknown' default."
+    columns:
+      - name: product_id
+        description: "Unique product identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: product_category_name_english
+        description: "English product category name (guaranteed non-null, defaults to 'unknown')."
+        data_tests:
+          - not_null
+
+  - name: int_order_reviews_deduped
+    description: "Deduplicated order reviews at strict 1 row per order_id grain, keeping the latest answered review."
+    columns:
+      - name: order_id
+        description: "Unique order identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_orders')
+                field: order_id
+      - name: review_id
+        description: "Selected review identifier for the order."
+        data_tests:
+          - not_null
+      - name: review_score
+        description: "Selected customer review score (1-5)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+      - name: reviews_count_for_order
+        description: "Total number of raw review records submitted for this order."
+        data_tests:
+          - not_null
+      - name: has_comment
+        description: "Boolean flag indicating whether the selected review includes a title or message."
+        data_tests:
+          - not_null
+      - name: is_negative_review
+        description: "Boolean flag indicating review_score <= 2."
+        data_tests:
+          - not_null
+
+  - name: int_order_items_agg
+    description: "Order line items aggregated strictly to the order_id grain."
+    columns:
+      - name: order_id
+        description: "Unique order identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_orders')
+                field: order_id
+      - name: items_count
+        description: "Total number of line items in the order."
+        data_tests:
+          - not_null
+      - name: distinct_products_count
+        description: "Count of distinct products in the order."
+        data_tests:
+          - not_null
+      - name: distinct_sellers_count
+        description: "Count of distinct sellers fulfilling the order."
+        data_tests:
+          - not_null
+      - name: gross_items_value_brl
+        description: "Sum of item prices in BRL."
+        data_tests:
+          - not_null
+      - name: freight_value_brl
+        description: "Sum of item freight values in BRL."
+        data_tests:
+          - not_null
+      - name: gross_order_value_brl
+        description: "Sum of price + freight_value in BRL."
+        data_tests:
+          - not_null
+
+  - name: int_order_payments_agg
+    description: "Order payments aggregated strictly to the order_id grain with primary payment type."
+    columns:
+      - name: order_id
+        description: "Unique order identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_orders')
+                field: order_id
+      - name: total_payment_value_brl
+        description: "Total payment value across all payment rows for the order in BRL."
+        data_tests:
+          - not_null
+      - name: payment_rows_count
+        description: "Total number of payment records for the order."
+        data_tests:
+          - not_null
+      - name: max_installments
+        description: "Maximum number of installments used on the order."
+        data_tests:
+          - not_null
+      - name: primary_payment_type
+        description: "Payment type accounting for the largest total value in the order (tie-break: lowest payment_sequential)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']
