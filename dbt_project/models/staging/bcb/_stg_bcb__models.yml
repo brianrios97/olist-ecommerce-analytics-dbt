@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_bcb_ipca
+    description: "Cleaned 1:1 staging model for BCB monthly IPCA inflation rate (series 433)."
+    columns:
+      - name: reference_month
+        description: "First day of the reference month (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: ipca_monthly_pct
+        description: "Monthly IPCA percentage change."
+        data_tests:
+          - not_null
+      - name: series_code
+        description: "BCB SGS series identifier (433)."
+
+  - name: stg_bcb_fx_usd_brl
+    description: "Cleaned 1:1 staging model for BCB daily USD/BRL PTAX selling exchange rate (series 1)."
+    columns:
+      - name: fx_date
+        description: "Business day date for the exchange rate quote (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: usd_brl_rate
+        description: "BRL per 1 USD exchange rate."
+        data_tests:
+          - not_null
+      - name: series_code
+        description: "BCB SGS series identifier (1)."

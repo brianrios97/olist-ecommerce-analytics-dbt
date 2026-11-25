@@ -52,6 +52,7 @@ dbt_project/dbt_packages/
 dbt_project/logs/
 dbt_project/.user.yml
 profiles.yml
+!dbt_project/profiles.yml
 
 # Power BI temporary / backup files
 powerbi/*.pbix.bak

@@ -1,0 +1,257 @@
+version: 2
+
+models:
+  - name: stg_olist_customers
+    description: "Cleaned 1:1 staging model for Olist customers, preserving zip code prefixes as text."
+    columns:
+      - name: customer_id
+        description: "Order-level customer identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        description: "Persistent unique customer identifier across multiple orders."
+        data_tests:
+          - not_null
+      - name: customer_zip_code_prefix
+        description: "First 5 digits of customer Brazilian postal code (CEP), kept as text."
+        data_tests:
+          - not_null
+      - name: customer_city
+        description: "Customer city name."
+      - name: customer_state
+        description: "Customer 2-letter Brazilian state code."
+
+  - name: stg_olist_geolocation
+    description: "Cleaned 1:1 staging model for Olist geolocation coordinates by zip code prefix."
+    columns:
+      - name: geolocation_zip_code_prefix
+        description: "First 5 digits of Brazilian postal code (CEP), kept as text."
+        data_tests:
+          - not_null
+      - name: geolocation_lat
+        description: "Latitude coordinate."
+        data_tests:
+          - not_null
+      - name: geolocation_lng
+        description: "Longitude coordinate."
+        data_tests:
+          - not_null
+      - name: geolocation_city
+        description: "City name."
+      - name: geolocation_state
+        description: "2-letter Brazilian state code."
+
+  - name: stg_olist_order_items
+    description: "Cleaned 1:1 staging model for order line items."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - order_id
+              - order_item_id
+    columns:
+      - name: order_id
+        description: "Foreign key to stg_olist_orders."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_orders')
+                field: order_id
+      - name: order_item_id
+        description: "Sequential item number within the order."
+        data_tests:
+          - not_null
+      - name: product_id
+        description: "Foreign key to stg_olist_products."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_products')
+                field: product_id
+      - name: seller_id
+        description: "Foreign key to stg_olist_sellers."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_sellers')
+                field: seller_id
+      - name: shipping_limit_date
+        description: "Seller shipping deadline timestamp."
+      - name: price
+        description: "Item unit price in BRL."
+        data_tests:
+          - not_null
+      - name: freight_value
+        description: "Item freight cost in BRL."
+        data_tests:
+          - not_null
+
+  - name: stg_olist_order_payments
+    description: "Cleaned 1:1 staging model for order payment transactions."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - order_id
+              - payment_sequential
+    columns:
+      - name: order_id
+        description: "Foreign key to stg_olist_orders."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_orders')
+                field: order_id
+      - name: payment_sequential
+        description: "Sequential payment method index within the order."
+        data_tests:
+          - not_null
+      - name: payment_type
+        description: "Method of payment chosen by the customer."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']
+      - name: payment_installments
+        description: "Number of installments selected."
+        data_tests:
+          - not_null
+      - name: payment_value
+        description: "Transaction payment amount in BRL."
+        data_tests:
+          - not_null
+
+  - name: stg_olist_order_reviews
+    description: "Cleaned 1:1 staging model for customer order reviews. Composite grain is (review_id, order_id)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - review_id
+              - order_id
+    columns:
+      - name: review_id
+        description: "Review identifier (not unique alone across orders in Olist)."
+        data_tests:
+          - not_null
+      - name: order_id
+        description: "Foreign key to stg_olist_orders."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_orders')
+                field: order_id
+      - name: review_score
+        description: "Customer satisfaction score from 1 to 5."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+      - name: review_comment_title
+        description: "Optional review comment title."
+      - name: review_comment_message
+        description: "Optional review comment body."
+      - name: review_creation_date
+        description: "Timestamp when the satisfaction survey was sent."
+      - name: review_answer_timestamp
+        description: "Timestamp when the customer answered the survey."
+
+  - name: stg_olist_orders
+    description: "Cleaned 1:1 staging model for Olist orders."
+    columns:
+      - name: order_id
+        description: "Unique order identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to stg_olist_customers."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_olist_customers')
+                field: customer_id
+      - name: order_status
+        description: "Current order lifecycle status."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['approved', 'canceled', 'created', 'delivered', 'invoiced', 'processing', 'shipped', 'unavailable']
+      - name: order_purchase_timestamp
+        description: "Timestamp when the customer placed the order."
+        data_tests:
+          - not_null
+      - name: order_approved_at
+        description: "Timestamp when payment was approved."
+      - name: order_delivered_carrier_date
+        description: "Timestamp when the order was handed to the logistics partner."
+      - name: order_delivered_customer_date
+        description: "Actual delivery timestamp to the customer."
+      - name: order_estimated_delivery_date
+        description: "Estimated delivery date communicated at purchase."
+
+  - name: stg_olist_products
+    description: "Cleaned 1:1 staging model for Olist product catalog with corrected length column spellings."
+    columns:
+      - name: product_id
+        description: "Unique product identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: product_category_name
+        description: "Portuguese product category name."
+      - name: product_name_length
+        description: "Character length of product name (typo fixed from raw)."
+      - name: product_description_length
+        description: "Character length of product description (typo fixed from raw)."
+      - name: product_photos_qty
+        description: "Number of published product photos."
+      - name: product_weight_g
+        description: "Product weight in grams."
+      - name: product_length_cm
+        description: "Product length in centimeters."
+      - name: product_height_cm
+        description: "Product height in centimeters."
+      - name: product_width_cm
+        description: "Product width in centimeters."
+
+  - name: stg_olist_sellers
+    description: "Cleaned 1:1 staging model for Olist sellers, preserving zip code prefixes as text."
+    columns:
+      - name: seller_id
+        description: "Unique seller identifier (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: seller_zip_code_prefix
+        description: "First 5 digits of seller Brazilian postal code (CEP), kept as text."
+        data_tests:
+          - not_null
+      - name: seller_city
+        description: "Seller city name."
+      - name: seller_state
+        description: "Seller 2-letter Brazilian state code."
+
+  - name: stg_olist_category_translation
+    description: "Cleaned 1:1 staging model mapping Portuguese product categories to English."
+    columns:
+      - name: product_category_name
+        description: "Portuguese product category name (primary key)."
+        data_tests:
+          - unique
+          - not_null
+      - name: product_category_name_english
+        description: "English translation of product category name."
+        data_tests:
+          - not_null
