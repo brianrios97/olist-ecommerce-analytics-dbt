@@ -1,0 +1,46 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environment & credentials
+.env
+.env.local
+.env.*.local
+kaggle.json
+.kaggle/
+
+# Raw & temporary data files (keep directory markers)
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.zip
+data/raw/*.parquet
+data/raw/**/*.csv
+data/raw/**/*.json
+data/raw/**/*.zip
+data/raw/**/*.parquet
+!data/raw/.gitkeep
+
+# dbt artifacts & local profiles
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+profiles.yml
+
+# Power BI temporary/cache files
+*.pbix.tmp
+*.pbit.tmp
+powerbi/cache/
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
