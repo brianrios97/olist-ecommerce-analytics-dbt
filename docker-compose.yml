@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-olist_dw}
       POSTGRES_USER: ${POSTGRES_USER:-olist_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-olist_pass_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-olist_dev_password}
     ports:
       - "${POSTGRES_PORT:-5434}:5432"
     volumes:
